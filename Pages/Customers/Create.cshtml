@@ -1,0 +1,17 @@
+@page
+@model FixFlow.Pages.Customers.CreateModel
+@{
+    ViewData["Title"] = "Add customer";
+}
+<div class="page-heading"><div><p class="eyebrow">Customer records</p><h1>Add customer</h1><p class="muted">Create a contact record before registering equipment.</p></div></div>
+<form method="post" class="panel form-panel">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+    <div class="form-grid">
+        <div><label asp-for="Customer.FullName"></label><input asp-for="Customer.FullName" /><span asp-validation-for="Customer.FullName" class="field-error"></span></div>
+        <div><label asp-for="Customer.PhoneNumber"></label><input asp-for="Customer.PhoneNumber" inputmode="tel" /><span asp-validation-for="Customer.PhoneNumber" class="field-error"></span></div>
+        <div><label asp-for="Customer.Email"></label><input asp-for="Customer.Email" inputmode="email" /><span asp-validation-for="Customer.Email" class="field-error"></span></div>
+        <div class="full-width"><label asp-for="Customer.Address"></label><input asp-for="Customer.Address" /><span asp-validation-for="Customer.Address" class="field-error"></span></div>
+        <div class="full-width"><label asp-for="Customer.Notes"></label><textarea asp-for="Customer.Notes" rows="3"></textarea><span asp-validation-for="Customer.Notes" class="field-error"></span></div>
+    </div>
+    <div class="form-actions"><a class="button button-quiet" asp-page="Index">Cancel</a><button class="button" type="submit">Save customer</button></div>
+</form>

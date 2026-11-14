@@ -1,0 +1,15 @@
+@page "{id:int}"
+@model FixFlow.Pages.Customers.DetailsModel
+@{
+    ViewData["Title"] = Model.Customer.FullName;
+}
+<div class="page-heading"><div><p class="eyebrow">Customer record</p><h1>@Model.Customer.FullName</h1><p class="muted">@Model.Customer.PhoneNumber · @Model.Customer.Email</p></div><a class="button" asp-page="/Equipment/Create" asp-route-customerId="@Model.Customer.Id">Add equipment</a></div>
+<section class="content-grid">
+    <article class="panel"><h2>Contact details</h2><dl class="detail-list"><dt>Phone</dt><dd>@(Model.Customer.PhoneNumber ?? "—")</dd><dt>Email</dt><dd>@(Model.Customer.Email ?? "—")</dd><dt>Address</dt><dd>@(Model.Customer.Address ?? "—")</dd><dt>Notes</dt><dd>@(Model.Customer.Notes ?? "—")</dd></dl></article>
+    <article class="panel"><div class="panel-heading"><div><h2>Equipment</h2><p>Registered items for this customer.</p></div></div>
+        @if (Model.Customer.Equipment.Count == 0) { <p class="empty-state">No equipment recorded.</p> } else { <ul class="compact-list">@foreach (var equipment in Model.Customer.Equipment) { <li><div><strong>@equipment.Category @equipment.Brand @equipment.Model</strong><span>@equipment.SerialNumber · @equipment.Capacity</span></div><a asp-page="/Equipment/Details" asp-route-id="@equipment.Id">History</a></li> }</ul> }
+    </article>
+</section>
+<section class="panel"><div class="panel-heading"><div><h2>Repair history</h2><p>All jobs for this customer.</p></div></div>
+@if (Model.Jobs.Count == 0) { <p class="empty-state">No repair jobs recorded.</p> } else { <div class="table-wrap"><table><thead><tr><th>Job</th><th>Equipment</th><th>Fault</th><th>Status</th><th>Received</th></tr></thead><tbody>@foreach (var job in Model.Jobs) { <tr><td><a asp-page="/Jobs/Details" asp-route-id="@job.Id">@job.JobReference</a></td><td>@job.Equipment.Category @job.Equipment.Brand</td><td>@job.ReportedFault</td><td><span class="status">@JobWorkflowService.FormatStatus(job.Status)</span></td><td>@job.ReceiveDate.ToString("dd MMM yyyy")</td></tr> }</tbody></table></div> }
+</section>

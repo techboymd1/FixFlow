@@ -1,0 +1,30 @@
+@page
+@model FixFlow.Pages.Customers.IndexModel
+@{
+    ViewData["Title"] = "Customers";
+}
+<div class="page-heading">
+    <div><p class="eyebrow">Customer records</p><h1>Customers</h1><p class="muted">Contact details and repair history in one place.</p></div>
+    <a class="button" asp-page="Create">Add customer</a>
+</div>
+<section class="panel">
+    <form class="filter-bar" method="get">
+        <label class="sr-only" for="search">Search customers</label>
+        <input id="search" name="search" value="@Model.Search" placeholder="Search name, phone or email" />
+        <button class="button button-secondary" type="submit">Search</button>
+        @if (!string.IsNullOrWhiteSpace(Model.Search)) { <a class="text-link" asp-page="Index">Clear</a> }
+    </form>
+    @if (Model.Customers.Count == 0)
+    {
+        <p class="empty-state">No customers found.</p>
+    }
+    else
+    {
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Equipment</th><th></th></tr></thead><tbody>
+        @foreach (var customer in Model.Customers)
+        {
+            <tr><td><strong>@customer.FullName</strong></td><td>@customer.PhoneNumber</td><td>@customer.Email</td><td>@customer.Equipment.Count</td><td><a asp-page="Details" asp-route-id="@customer.Id">View</a></td></tr>
+        }
+        </tbody></table></div>
+    }
+</section>

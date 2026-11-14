@@ -1,0 +1,16 @@
+@page
+@model FixFlow.Pages.Jobs.IndexModel
+@{
+    ViewData["Title"] = "Repair jobs";
+}
+<div class="page-heading"><div><p class="eyebrow">Job cards</p><h1>Repair jobs</h1><p class="muted">Search work by job reference, customer, equipment or fault.</p></div>@if (User.IsInRole(UserRoles.OwnerAdmin) || User.IsInRole(UserRoles.FrontDesk)) { <a class="button" asp-page="Create">Create job card</a> }</div>
+<section class="panel">
+    <form class="filter-bar filter-bar-wide" method="get">
+        <input name="search" value="@Model.Search" placeholder="Search jobs" aria-label="Search jobs" />
+        <select name="status" aria-label="Filter by status"><option value="">All statuses</option>@foreach (var item in Model.StatusOptions) { <option value="@item.Value" selected="@item.Selected">@item.Text</option> }</select>
+        <label class="check-label"><input type="checkbox" name="openOnly" value="true" checked="@Model.OpenOnly" /> Open only</label>
+        @if (!User.IsInRole(UserRoles.Technician)) { <label class="check-label"><input type="checkbox" name="unpaidOnly" value="true" checked="@Model.UnpaidOnly" /> Unpaid only</label> }
+        <button class="button button-secondary" type="submit">Apply</button><a class="text-link" asp-page="Index">Reset</a>
+    </form>
+    @if (Model.Jobs.Count == 0) { <p class="empty-state">No jobs match these filters.</p> } else { <div class="table-wrap"><table><thead><tr><th>Job</th><th>Customer / equipment</th><th>Fault</th><th>Technician</th><th>Status</th><th>Balance</th><th></th></tr></thead><tbody>@foreach (var job in Model.Jobs) { <tr><td><strong>@job.JobReference</strong><br /><span class="muted">@job.ReceiveDate.ToString("dd MMM yyyy")</span></td><td>@job.Customer.FullName<br /><span class="muted">@job.Equipment.Category @job.Equipment.Brand @job.Equipment.Model</span></td><td>@job.ReportedFault</td><td>@(job.Technician?.FullName ?? "Unassigned")</td><td><span class="status status-@job.Status.ToString().ToLowerInvariant()">@JobWorkflowService.FormatStatus(job.Status)</span></td><td>@(Model.Balances[job.Id].ToString("N2"))</td><td><a asp-page="Details" asp-route-id="@job.Id">Open</a></td></tr> }</tbody></table></div> }
+</section>

@@ -1,0 +1,8 @@
+@page "{id:int}"
+@model FixFlow.Pages.Equipment.DetailsModel
+@{
+    ViewData["Title"] = "Equipment history";
+}
+<div class="page-heading"><div><p class="eyebrow">Equipment history</p><h1>@Model.Equipment.Category @Model.Equipment.Brand @Model.Equipment.Model</h1><p class="muted">Owned by <a asp-page="/Customers/Details" asp-route-id="@Model.Equipment.CustomerId">@Model.Equipment.Customer.FullName</a></p></div><a class="button" asp-page="/Jobs/Create" asp-route-equipmentId="@Model.Equipment.Id">Create job card</a></div>
+<section class="content-grid"><article class="panel"><h2>Equipment details</h2><dl class="detail-list"><dt>Brand</dt><dd>@(Model.Equipment.Brand ?? "—")</dd><dt>Model</dt><dd>@(Model.Equipment.Model ?? "—")</dd><dt>Serial number</dt><dd>@(Model.Equipment.SerialNumber ?? "—")</dd><dt>Capacity</dt><dd>@(Model.Equipment.Capacity ?? "—")</dd><dt>Notes</dt><dd>@(Model.Equipment.Notes ?? "—")</dd></dl></article></section>
+<section class="panel"><h2>Repair history</h2>@if (Model.Jobs.Count == 0) { <p class="empty-state">No repair history yet.</p> } else { <div class="table-wrap"><table><thead><tr><th>Job</th><th>Fault</th><th>Status</th><th>Received</th></tr></thead><tbody>@foreach (var job in Model.Jobs) { <tr><td><a asp-page="/Jobs/Details" asp-route-id="@job.Id">@job.JobReference</a></td><td>@job.ReportedFault</td><td>@JobWorkflowService.FormatStatus(job.Status)</td><td>@job.ReceiveDate.ToString("dd MMM yyyy")</td></tr> }</tbody></table></div> }</section>

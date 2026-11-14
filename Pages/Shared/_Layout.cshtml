@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FixFlow</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="site-header">
+        <div class="header-inner">
+            <a class="brand" asp-page="/Index" aria-label="FixFlow dashboard">
+                <span class="brand-mark">FF</span>
+                <span>FixFlow<small>Repair operations</small></span>
+            </a>
+            <button class="menu-toggle" type="button" aria-label="Toggle navigation" data-menu-toggle>Menu</button>
+            <nav class="main-nav" data-main-nav>
+                <a asp-page="/Index">Dashboard</a>
+                <a asp-page="/Jobs/Index">Jobs</a>
+                <a asp-page="/Customers/Index">Customers</a>
+                <a asp-page="/Equipment/Index">Equipment</a>
+                @if (User.IsInRole(UserRoles.OwnerAdmin))
+                {
+                    <a asp-page="/Parts/Index">Parts</a>
+                }
+                @if (User.IsInRole(UserRoles.Technician))
+                {
+                    <a asp-page="/Technicians/Queue">My queue</a>
+                }
+            </nav>
+            <form class="user-menu" method="post" asp-page="/Account/Logout">
+                <span>@User.Identity?.Name</span>
+                <button type="submit" class="link-button">Sign out</button>
+            </form>
+        </div>
+    </header>
+    <main class="page-shell">
+        @if (TempData["Success"] is string successMessage)
+        {
+            <div class="alert alert-success" role="status">@successMessage</div>
+        }
+        @if (TempData["Error"] is string errorMessage)
+        {
+            <div class="alert alert-error" role="alert">@errorMessage</div>
+        }
+        @RenderBody()
+    </main>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

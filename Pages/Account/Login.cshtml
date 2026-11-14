@@ -1,0 +1,32 @@
+@page
+@model FixFlow.Pages.Account.LoginModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Sign in";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in - FixFlow</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="login-body">
+    <main class="login-card">
+        <a class="brand login-brand" asp-page="/Account/Login"><span class="brand-mark">FF</span><span>FixFlow<small>Repair operations</small></span></a>
+        <div class="login-intro"><h1>Welcome back</h1><p>Sign in to manage your workshop.</p></div>
+        <form method="post" class="stack-form">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+            <label asp-for="Input.UserName"></label>
+            <input asp-for="Input.UserName" autocomplete="username" autofocus />
+            <span asp-validation-for="Input.UserName" class="field-error"></span>
+            <label asp-for="Input.Password"></label>
+            <input asp-for="Input.Password" autocomplete="current-password" />
+            <span asp-validation-for="Input.Password" class="field-error"></span>
+            <button class="button button-full" type="submit">Sign in</button>
+        </form>
+        <p class="login-note">Contact your workshop owner if you need access.</p>
+    </main>
+</body>
+</html>

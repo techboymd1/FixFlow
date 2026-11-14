@@ -1,0 +1,19 @@
+@page
+@model FixFlow.Pages.Equipment.CreateModel
+@{
+    ViewData["Title"] = "Add equipment";
+}
+<div class="page-heading"><div><p class="eyebrow">Equipment register</p><h1>Add equipment</h1><p class="muted">Link every item to the customer who owns it.</p></div></div>
+<form method="post" class="panel form-panel">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+    <div class="form-grid">
+        <div class="full-width"><label asp-for="Equipment.CustomerId">Customer</label><select asp-for="Equipment.CustomerId" asp-items="Model.CustomerOptions"><option value="">Select a customer</option></select><span asp-validation-for="Equipment.CustomerId" class="field-error"></span></div>
+        <div><label asp-for="Equipment.Category"></label><select asp-for="Equipment.Category"><option value="">Select type</option><option>Generator</option><option>Inverter</option><option>Solar system</option><option>Electronics</option></select><span asp-validation-for="Equipment.Category" class="field-error"></span></div>
+        <div><label asp-for="Equipment.Brand"></label><input asp-for="Equipment.Brand" /></div>
+        <div><label asp-for="Equipment.Model"></label><input asp-for="Equipment.Model" /></div>
+        <div><label asp-for="Equipment.SerialNumber">Serial number</label><input asp-for="Equipment.SerialNumber" /></div>
+        <div><label asp-for="Equipment.Capacity"></label><input asp-for="Equipment.Capacity" placeholder="e.g. 5 kVA or 200 Ah" /></div>
+        <div class="full-width"><label asp-for="Equipment.Notes"></label><textarea asp-for="Equipment.Notes" rows="3"></textarea></div>
+    </div>
+    <div class="form-actions"><a class="button button-quiet" asp-page="Index">Cancel</a><button class="button" type="submit">Save equipment</button></div>
+</form>

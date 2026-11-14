@@ -1,0 +1,9 @@
+@page
+@model FixFlow.Pages.Technicians.QueueModel
+@{
+    ViewData["Title"] = "My work queue";
+}
+<div class="page-heading"><div><p class="eyebrow">Technician workspace</p><h1>My work queue</h1><p class="muted">Jobs currently assigned to you, ordered by expected completion date.</p></div></div>
+<section class="panel">
+@if (Model.Jobs.Count == 0) { <p class="empty-state">You have no open jobs assigned to you.</p> } else { <div class="table-wrap"><table><thead><tr><th>Job</th><th>Customer</th><th>Equipment</th><th>Fault</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>@foreach (var job in Model.Jobs) { <tr><td><strong>@job.JobReference</strong></td><td>@job.Customer.FullName</td><td>@job.Equipment.Category @job.Equipment.Brand</td><td>@job.ReportedFault</td><td>@(job.ExpectedCompletionDate?.ToString("dd MMM") ?? "Not set")</td><td><span class="status">@JobWorkflowService.FormatStatus(job.Status)</span></td><td><a asp-page="/Jobs/Details" asp-route-id="@job.Id">Open job</a></td></tr> }</tbody></table></div> }
+</section>

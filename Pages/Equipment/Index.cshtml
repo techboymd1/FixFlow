@@ -1,0 +1,10 @@
+@page
+@model FixFlow.Pages.Equipment.IndexModel
+@{
+    ViewData["Title"] = "Equipment";
+}
+<div class="page-heading"><div><p class="eyebrow">Equipment register</p><h1>Equipment</h1><p class="muted">Generators, inverters, solar systems and electronics.</p></div><a class="button" asp-page="Create">Add equipment</a></div>
+<section class="panel">
+    <form class="filter-bar" method="get"><label class="sr-only" for="search">Search equipment</label><input id="search" name="search" value="@Model.Search" placeholder="Search customer, brand, model or serial" /><button class="button button-secondary" type="submit">Search</button>@if (!string.IsNullOrWhiteSpace(Model.Search)) { <a class="text-link" asp-page="Index">Clear</a> }</form>
+    @if (Model.EquipmentItems.Count == 0) { <p class="empty-state">No equipment found.</p> } else { <div class="table-wrap"><table><thead><tr><th>Equipment</th><th>Customer</th><th>Serial number</th><th>Capacity</th><th></th></tr></thead><tbody>@foreach (var equipment in Model.EquipmentItems) { <tr><td><strong>@equipment.Category</strong><br /><span class="muted">@equipment.Brand @equipment.Model</span></td><td>@equipment.Customer.FullName</td><td>@equipment.SerialNumber</td><td>@equipment.Capacity</td><td><a asp-page="Details" asp-route-id="@equipment.Id">History</a></td></tr> }</tbody></table></div> }
+</section>

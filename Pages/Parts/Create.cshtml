@@ -1,0 +1,7 @@
+@page
+@model FixFlow.Pages.Parts.CreateModel
+@{
+    ViewData["Title"] = "Add part";
+}
+<div class="page-heading"><div><p class="eyebrow">Workshop inventory</p><h1>Add part</h1><p class="muted">Set a clear SKU and reorder point before use.</p></div></div>
+<form method="post" class="panel form-panel"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><div class="form-grid"><div><label asp-for="Part.Sku"></label><input asp-for="Part.Sku" /><span asp-validation-for="Part.Sku" class="field-error"></span></div><div><label asp-for="Part.Name"></label><input asp-for="Part.Name" /><span asp-validation-for="Part.Name" class="field-error"></span></div><div><label asp-for="Part.StockQuantity">Opening stock</label><input asp-for="Part.StockQuantity" min="0" /></div><div><label asp-for="Part.ReorderPoint"></label><input asp-for="Part.ReorderPoint" min="0" /></div><div><label asp-for="Part.CostPrice">Cost price</label><input asp-for="Part.CostPrice" min="0" /></div><div><label asp-for="Part.SellingPrice">Selling price</label><input asp-for="Part.SellingPrice" min="0" /></div><div class="full-width"><label asp-for="Part.Description"></label><textarea asp-for="Part.Description" rows="3"></textarea></div></div><div class="form-actions"><a class="button button-quiet" asp-page="Index">Cancel</a><button class="button" type="submit">Save part</button></div></form>

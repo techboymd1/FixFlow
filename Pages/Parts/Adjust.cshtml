@@ -1,0 +1,7 @@
+@page "{id:int}"
+@model FixFlow.Pages.Parts.AdjustModel
+@{
+    ViewData["Title"] = "Adjust stock";
+}
+<div class="page-heading"><div><p class="eyebrow">Inventory adjustment</p><h1>@Model.Part.Name</h1><p class="muted">@Model.Part.Sku · Current quantity: <strong>@Model.Part.StockQuantity</strong></p></div></div>
+<form method="post" class="panel form-panel narrow-panel"><div asp-validation-summary="ModelOnly" class="validation-summary"></div><input type="hidden" asp-for="Part.Id" /><div class="stack-form"><label asp-for="Input.QuantityChange">Quantity change</label><input asp-for="Input.QuantityChange" placeholder="Use a positive or negative number" /><span asp-validation-for="Input.QuantityChange" class="field-error"></span><label asp-for="Input.Reason"></label><textarea asp-for="Input.Reason" rows="3" placeholder="For example: stock delivery, count correction or damaged part"></textarea><span asp-validation-for="Input.Reason" class="field-error"></span></div><div class="form-actions"><a class="button button-quiet" asp-page="Index">Cancel</a><button class="button" type="submit">Save adjustment</button></div></form>

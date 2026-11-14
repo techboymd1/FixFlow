@@ -1,0 +1,18 @@
+@page
+@model FixFlow.Pages.Jobs.CreateModel
+@{
+    ViewData["Title"] = "Create job card";
+}
+<div class="page-heading"><div><p class="eyebrow">Repair intake</p><h1>Create job card</h1><p class="muted">Record the reported problem and the item received.</p></div></div>
+<form method="post" class="panel form-panel">
+    <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+    <div class="form-grid">
+        <div class="full-width"><label asp-for="Input.EquipmentId">Customer and equipment</label><select asp-for="Input.EquipmentId" asp-items="Model.EquipmentOptions"><option value="">Select customer equipment</option></select><span asp-validation-for="Input.EquipmentId" class="field-error"></span><p class="field-hint">Need an item? <a asp-page="/Equipment/Create">Register equipment first</a>.</p></div>
+        <div><label asp-for="Input.ReceiveDate"></label><input asp-for="Input.ReceiveDate" /><span asp-validation-for="Input.ReceiveDate" class="field-error"></span></div>
+        <div><label asp-for="Input.ExpectedCompletionDate"></label><input asp-for="Input.ExpectedCompletionDate" /></div>
+        <div class="full-width"><label asp-for="Input.ReportedFault"></label><textarea asp-for="Input.ReportedFault" rows="4" placeholder="Describe what the customer says is wrong"></textarea><span asp-validation-for="Input.ReportedFault" class="field-error"></span></div>
+        <div class="full-width"><label asp-for="Input.ConditionAndAccessories"></label><textarea asp-for="Input.ConditionAndAccessories" rows="3" placeholder="Physical condition, fuel level, charger, remote, cables, panels or accessories received"></textarea></div>
+        <div class="full-width"><label asp-for="Input.InternalNotes"></label><textarea asp-for="Input.InternalNotes" rows="3" placeholder="Private intake notes"></textarea></div>
+    </div>
+    <div class="form-actions"><a class="button button-quiet" asp-page="Index">Cancel</a><button class="button" type="submit">Create job card</button></div>
+</form>

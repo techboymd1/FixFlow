@@ -1,0 +1,10 @@
+@page
+@model FixFlow.Pages.Parts.IndexModel
+@{
+    ViewData["Title"] = "Parts inventory";
+}
+<div class="page-heading"><div><p class="eyebrow">Workshop inventory</p><h1>Parts inventory</h1><p class="muted">Track parts stock, cost, pricing and reorder points.</p></div><a class="button" asp-page="Create">Add part</a></div>
+<section class="panel">
+    <form class="filter-bar" method="get"><input name="search" value="@Model.Search" placeholder="Search SKU or part name" aria-label="Search parts" /><label class="check-label"><input type="checkbox" name="lowStockOnly" value="true" checked="@Model.LowStockOnly" /> Low stock only</label><button class="button button-secondary" type="submit">Apply</button><a class="text-link" asp-page="Index">Reset</a></form>
+    @if (Model.Parts.Count == 0) { <p class="empty-state">No parts match these filters.</p> } else { <div class="table-wrap"><table><thead><tr><th>SKU / part</th><th>Stock</th><th>Reorder at</th><th>Cost</th><th>Selling</th><th></th></tr></thead><tbody>@foreach (var part in Model.Parts) { <tr><td><strong>@part.Name</strong><br /><span class="muted">@part.Sku</span></td><td class="@(part.StockQuantity <= part.ReorderPoint ? "low-stock" : "")">@part.StockQuantity</td><td>@part.ReorderPoint</td><td>@part.CostPrice.ToString("N2")</td><td>@part.SellingPrice.ToString("N2")</td><td><a asp-page="Adjust" asp-route-id="@part.Id">Adjust stock</a></td></tr> }</tbody></table></div> }
+</section>

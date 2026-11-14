@@ -1,0 +1,8 @@
+@page "{id:int}"
+@model FixFlow.Pages.Payments.ReceiptModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>@Model.Payment.ReceiptNumber - FixFlow receipt</title><link rel="stylesheet" href="~/css/site.css" asp-append-version="true" /></head>
+<body class="print-page"><main class="print-sheet receipt-sheet"><div class="print-header"><div class="brand"><span class="brand-mark">FF</span><span>FixFlow<small>Repair operations</small></span></div><div><h1>Payment receipt</h1><strong>@Model.Payment.ReceiptNumber</strong></div></div><section class="print-section"><div><span>Received from</span><strong>@Model.Payment.RepairJob.Customer.FullName</strong><p>Job: @Model.Payment.RepairJob.JobReference</p></div><div><span>Payment date</span><strong>@Model.Payment.PaidAtUtc.ToLocalTime().ToString("dd MMM yyyy")</strong><p>Method: @Model.Payment.PaymentMethod</p></div><div><span>Amount paid</span><strong>@Model.Payment.Amount.ToString("N2")</strong><p>Received by @Model.Payment.ReceivedByUser.FullName</p></div></section><section class="print-section single"><h2>Equipment</h2><p>@Model.Payment.RepairJob.Equipment.Category @Model.Payment.RepairJob.Equipment.Brand @Model.Payment.RepairJob.Equipment.Model</p><h2>Payment note</h2><p>@(Model.Payment.Notes ?? "None")</p></section><section class="signature-grid"><div>Customer signature</div><div>For FixFlow</div></section></main><script>window.print();</script></body></html>

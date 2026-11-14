@@ -1,0 +1,73 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Workshop overview</p>
+        <h1>Good day, @User.Identity?.Name</h1>
+        <p class="muted">See the repair work that needs attention now.</p>
+    </div>
+    @if (User.IsInRole(UserRoles.OwnerAdmin) || User.IsInRole(UserRoles.FrontDesk))
+    {
+        <a class="button" asp-page="/Jobs/Create">Create job card</a>
+    }
+</div>
+
+<section class="stat-grid" aria-label="Current repair summary">
+    <a class="stat-card" asp-page="/Jobs/Index" asp-route-openOnly="true"><span>Open jobs</span><strong>@Model.OpenJobCount</strong></a>
+    <a class="stat-card warning" asp-page="/Jobs/Index" asp-route-status="AwaitingApproval"><span>Waiting approval</span><strong>@Model.WaitingApprovalCount</strong></a>
+    <a class="stat-card success" asp-page="/Jobs/Index" asp-route-status="ReadyForPickup"><span>Ready for pickup</span><strong>@Model.ReadyForPickupCount</strong></a>
+    <a class="stat-card danger" asp-page="/Jobs/Index" asp-route-unpaidOnly="true"><span>Unpaid balances</span><strong>@Model.UnpaidJobCount</strong></a>
+</section>
+
+<section class="content-grid">
+    <article class="panel span-two">
+        <div class="panel-heading">
+            <div><h2>Recent jobs</h2><p>Latest repair intake and activity.</p></div>
+            <a asp-page="/Jobs/Index">View all jobs</a>
+        </div>
+        @if (Model.RecentJobs.Count == 0)
+        {
+            <p class="empty-state">No jobs have been recorded yet.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Job</th><th>Customer</th><th>Equipment</th><th>Status</th><th>Received</th></tr></thead>
+                    <tbody>
+                    @foreach (var job in Model.RecentJobs)
+                    {
+                        <tr>
+                            <td><a asp-page="/Jobs/Details" asp-route-id="@job.Id">@job.JobReference</a></td>
+                            <td>@job.Customer.FullName</td>
+                            <td>@job.Equipment.Category @job.Equipment.Brand @job.Equipment.Model</td>
+                            <td><span class="status status-@job.Status.ToString().ToLowerInvariant()">@JobWorkflowService.FormatStatus(job.Status)</span></td>
+                            <td>@job.ReceiveDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </article>
+    <article class="panel">
+        <div class="panel-heading"><div><h2>Low stock</h2><p>Parts at or below their reorder point.</p></div>@if (User.IsInRole(UserRoles.OwnerAdmin)) { <a asp-page="/Parts/Index">Manage</a> }</div>
+        @if (Model.LowStockParts.Count == 0)
+        {
+            <p class="empty-state">All active parts are above their reorder point.</p>
+        }
+        else
+        {
+            <ul class="compact-list">
+            @foreach (var part in Model.LowStockParts)
+            {
+                <li><div><strong>@part.Name</strong><span>@part.Sku</span></div><b>@part.StockQuantity left</b></li>
+            }
+            </ul>
+        }
+    </article>
+</section>

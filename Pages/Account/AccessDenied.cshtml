@@ -1,0 +1,11 @@
+@page
+@model FixFlow.Pages.Account.AccessDeniedModel
+@{
+    ViewData["Title"] = "Access denied";
+}
+<div class="panel narrow-panel">
+    <p class="eyebrow">Permission required</p>
+    <h1>Access denied</h1>
+    <p>You do not have permission to view or change this record.</p>
+    <a class="button" asp-page="/Index">Return to dashboard</a>
+</div>
