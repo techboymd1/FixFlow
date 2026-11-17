@@ -131,10 +131,18 @@ CREATE TABLE IF NOT EXISTS `StockMovements` (
     `MovementType` VARCHAR(30) NOT NULL,
     `Reason` VARCHAR(300) NULL,
     `RepairJobId` INT NULL,
+    `CreatedByUserId` INT NULL,
     `CreatedAtUtc` DATETIME(6) NOT NULL,
     PRIMARY KEY (`Id`),
     KEY `IX_StockMovements_PartId` (`PartId`),
-    CONSTRAINT `FK_StockMovements_Parts_PartId` FOREIGN KEY (`PartId`) REFERENCES `Parts` (`Id`) ON DELETE RESTRICT
+    KEY `IX_StockMovements_RepairJobId` (`RepairJobId`),
+    KEY `IX_StockMovements_CreatedByUserId` (`CreatedByUserId`),
+    CONSTRAINT `FK_StockMovements_Parts_PartId`
+        FOREIGN KEY (`PartId`) REFERENCES `Parts` (`Id`) ON DELETE RESTRICT,
+    CONSTRAINT `FK_StockMovements_RepairJobs_RepairJobId`
+        FOREIGN KEY (`RepairJobId`) REFERENCES `RepairJobs` (`Id`) ON DELETE SET NULL,
+    CONSTRAINT `FK_StockMovements_Users_CreatedByUserId`
+        FOREIGN KEY (`CreatedByUserId`) REFERENCES `Users` (`Id`) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `Payments` (

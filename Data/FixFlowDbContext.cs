@@ -88,7 +88,23 @@ public class FixFlowDbContext(DbContextOptions<FixFlowDbContext> options) : DbCo
 
         modelBuilder.Entity<StockMovement>(entity =>
         {
-            entity.HasOne(movement => movement.Part).WithMany(part => part.StockMovements).HasForeignKey(movement => movement.PartId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(movement => movement.RepairJobId);
+            entity.HasIndex(movement => movement.CreatedByUserId);
+
+            entity.HasOne(movement => movement.Part)
+                .WithMany(part => part.StockMovements)
+                .HasForeignKey(movement => movement.PartId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(movement => movement.RepairJob)
+                .WithMany()
+                .HasForeignKey(movement => movement.RepairJobId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(movement => movement.CreatedByUser)
+                .WithMany()
+                .HasForeignKey(movement => movement.CreatedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Payment>(entity =>

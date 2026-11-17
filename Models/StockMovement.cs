@@ -5,6 +5,7 @@ namespace FixFlow.Models;
 public class StockMovement
 {
     public int Id { get; set; }
+
     public int PartId { get; set; }
     public Part Part { get; set; } = null!;
 
@@ -17,5 +18,10 @@ public class StockMovement
     public string? Reason { get; set; }
 
     public int? RepairJobId { get; set; }
+    public RepairJob? RepairJob { get; set; }
+
+    public int? CreatedByUserId { get; set; }
+    public AppUser? CreatedByUser { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

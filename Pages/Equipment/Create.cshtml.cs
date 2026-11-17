@@ -47,10 +47,12 @@ public class CreateModel(FixFlowDbContext database) : PageModel
 
     private async Task LoadCustomersAsync()
     {
-        CustomerOptions = await database.Customers.OrderBy(customer => customer.FullName)
+        CustomerOptions = await database
+            .Customers.OrderBy(customer => customer.FullName)
             .Select(customer => new SelectListItem(customer.FullName, customer.Id.ToString()))
             .ToListAsync();
     }
 
-    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private static string? Clean(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }

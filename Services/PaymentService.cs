@@ -1,56 +1,127 @@
+using System.Data;
+using System.Data.Common;
 using FixFlow.Data;
 using FixFlow.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FixFlow.Services;
 
 public class PaymentService(FixFlowDbContext database)
 {
+    private const string ReceiptLockName = "FixFlow:PaymentReceiptSequence";
+
     public async Task<PaymentResult> RecordPaymentAsync(
         int repairJobId,
         decimal amount,
         string paymentMethod,
         string? notes,
         int receivedByUserId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (amount <= 0)
         {
             return PaymentResult.Failed("The payment amount must be greater than zero.");
         }
 
-        var job = await database.RepairJobs
-            .Include(item => item.Estimate)
-            .Include(item => item.PartsUsed)
-            .Include(item => item.Payments)
-            .SingleOrDefaultAsync(item => item.Id == repairJobId, cancellationToken);
+        await using var transaction = await database.Database.BeginTransactionAsync(
+            IsolationLevel.ReadCommitted,
+            cancellationToken
+        );
 
-        if (job is null)
+        var receiptLockAcquired = false;
+        var transactionCommitted = false;
+
+        try
         {
-            return PaymentResult.Failed("The repair job was not found.");
+            // This locking read serializes payments for the same repair job.
+            var job = await database
+                .RepairJobs.FromSqlInterpolated(
+                    $"SELECT * FROM `RepairJobs` WHERE `Id` = {repairJobId} FOR UPDATE"
+                )
+                .SingleOrDefaultAsync(cancellationToken);
+
+            if (job is null)
+            {
+                return PaymentResult.Failed("The repair job was not found.");
+            }
+
+            // Do not rely on navigation collections already loaded by the page handler.
+            // These aggregate queries read current committed values after the job lock.
+            var estimate = await database
+                .RepairEstimates.AsNoTracking()
+                .Where(item => item.RepairJobId == repairJobId)
+                .Select(item => new { item.PartsAmount, item.LabourAmount })
+                .SingleOrDefaultAsync(cancellationToken);
+
+            var usedPartsTotal = await database
+                .JobParts.AsNoTracking()
+                .Where(item => item.RepairJobId == repairJobId)
+                .Select(item => (decimal?)(item.UnitPrice * item.Quantity))
+                .SumAsync(cancellationToken)
+                ?? 0m;
+
+            var paidTotal = await database
+                .Payments.AsNoTracking()
+                .Where(item => item.RepairJobId == repairJobId)
+                .Select(item => (decimal?)item.Amount)
+                .SumAsync(cancellationToken)
+                ?? 0m;
+
+            var quotedParts = estimate?.PartsAmount ?? 0m;
+            var labourTotal = estimate?.LabourAmount ?? 0m;
+            var jobTotal = Math.Max(quotedParts, usedPartsTotal) + labourTotal;
+            var outstandingBalance = jobTotal - paidTotal;
+
+            if (amount > outstandingBalance)
+            {
+                return PaymentResult.Failed(
+                    $"The outstanding balance is {outstandingBalance:N2}; a payment cannot exceed it."
+                );
+            }
+
+            // A single MySQL session lock serializes receipt numbers across different jobs.
+            receiptLockAcquired = await AcquireReceiptNumberLockAsync(
+                transaction.GetDbTransaction(),
+                cancellationToken
+            );
+
+            if (!receiptLockAcquired)
+            {
+                return PaymentResult.Failed(
+                    "Receipt generation is busy. Please try recording the payment again."
+                );
+            }
+
+            var payment = new Payment
+            {
+                RepairJobId = repairJobId,
+                Amount = amount,
+                PaymentMethod = paymentMethod,
+                Notes = notes,
+                ReceiptNumber = await CreateReceiptNumberAsync(cancellationToken),
+                ReceivedByUserId = receivedByUserId,
+            };
+
+            database.Payments.Add(payment);
+            job.UpdatedAtUtc = DateTime.UtcNow;
+
+            await database.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            transactionCommitted = true;
+
+            return PaymentResult.Succeeded(payment.Id);
         }
-
-        var jobTotal = GetJobTotal(job);
-        var paidTotal = job.Payments.Sum(payment => payment.Amount);
-        var outstandingBalance = jobTotal - paidTotal;
-        if (amount > outstandingBalance)
+        finally
         {
-            return PaymentResult.Failed($"The outstanding balance is {outstandingBalance:N2}; a payment cannot exceed it.");
+            if (receiptLockAcquired)
+            {
+                await ReleaseReceiptNumberLockAsync(
+                    transactionCommitted ? null : transaction.GetDbTransaction()
+                );
+            }
         }
-
-        var payment = new Payment
-        {
-            RepairJobId = repairJobId,
-            Amount = amount,
-            PaymentMethod = paymentMethod,
-            Notes = notes,
-            ReceiptNumber = await CreateReceiptNumberAsync(cancellationToken),
-            ReceivedByUserId = receivedByUserId
-        };
-        database.Payments.Add(payment);
-        job.UpdatedAtUtc = DateTime.UtcNow;
-        await database.SaveChangesAsync(cancellationToken);
-        return PaymentResult.Succeeded(payment.Id);
     }
 
     public static decimal GetJobTotal(RepairJob job)
@@ -60,31 +131,69 @@ public class PaymentService(FixFlowDbContext database)
         var usedPartsTotal = job.PartsUsed.Sum(part => part.LineTotal);
 
         // Keep the quoted parts charge unless actual recorded usage is higher.
-        // Labour is always retained when parts usage exceeds the original quote.
         return Math.Max(quotedParts, usedPartsTotal) + labourTotal;
+    }
+
+    private async Task<bool> AcquireReceiptNumberLockAsync(
+        DbTransaction transaction,
+        CancellationToken cancellationToken
+    )
+    {
+        var connection = database.Database.GetDbConnection();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT GET_LOCK(@lockName, 10);";
+        command.Transaction = transaction;
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "@lockName";
+        parameter.DbType = DbType.String;
+        parameter.Value = ReceiptLockName;
+        command.Parameters.Add(parameter);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return result is not null && result != DBNull.Value && Convert.ToInt32(result) == 1;
+    }
+
+    private async Task ReleaseReceiptNumberLockAsync(DbTransaction? transaction)
+    {
+        var connection = database.Database.GetDbConnection();
+        await using var command = connection.CreateCommand();
+        command.CommandText = "SELECT RELEASE_LOCK(@lockName);";
+        command.Transaction = transaction;
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "@lockName";
+        parameter.DbType = DbType.String;
+        parameter.Value = ReceiptLockName;
+        command.Parameters.Add(parameter);
+
+        await command.ExecuteScalarAsync(CancellationToken.None);
     }
 
     private async Task<string> CreateReceiptNumberAsync(CancellationToken cancellationToken)
     {
         var prefix = $"RC-{DateTime.UtcNow:yyyyMMdd}-";
-        var lastReceipt = await database.Payments
+
+        var existingReceipts = await database
+            .Payments.AsNoTracking()
             .Where(payment => payment.ReceiptNumber.StartsWith(prefix))
-            .OrderByDescending(payment => payment.ReceiptNumber)
             .Select(payment => payment.ReceiptNumber)
-            .FirstOrDefaultAsync(cancellationToken);
+            .ToListAsync(cancellationToken);
 
-        var nextNumber = 1;
-        if (lastReceipt is not null && int.TryParse(lastReceipt[prefix.Length..], out var lastNumber))
-        {
-            nextNumber = lastNumber + 1;
-        }
+        var highestNumber = existingReceipts
+            .Select(receipt =>
+                long.TryParse(receipt[prefix.Length..], out var number) ? number : 0L
+            )
+            .DefaultIfEmpty(0L)
+            .Max();
 
-        return $"{prefix}{nextNumber:D3}";
+        return $"{prefix}{highestNumber + 1:D3}";
     }
 }
 
 public record PaymentResult(bool IsSuccessful, int? PaymentId, string? ErrorMessage)
 {
     public static PaymentResult Succeeded(int paymentId) => new(true, paymentId, null);
+
     public static PaymentResult Failed(string message) => new(false, null, message);
 }

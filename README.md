@@ -19,7 +19,7 @@ FixFlow is an operational repair-workshop application for generator, solar/inver
 - Human-readable repair references (`FF-yyyyMMdd-###`), intake condition/accessories, due date and job history
 - Server-enforced workflow: Received → Diagnosing → Awaiting Approval → In Progress → Ready for Pickup → Collected, with cancellation from active states
 - Diagnosis notes, estimates, recorded customer approval/rejection, and an approved estimate requirement before work starts
-- Owner/Admin, Front Desk and Technician roles. A technician can access only jobs assigned to that technician.
+- Owner/Admin, Front Desk and Technician roles. A technician can access only jobs assigned to that technician. Owner/Admin can create staff accounts, deactivate/reactivate accounts and reset passwords.
 - Technician assignment and a personal work queue
 - Stock catalogue, low-stock dashboard list, stock adjustments, transactional job-parts usage, and a no-negative-stock rule
 - Partial/full manual payments, outstanding balance checks, print-friendly job card and receipt
@@ -62,18 +62,30 @@ The app also seeds those accounts only when running in Development, only if the 
 
 | Role | Can do |
 | --- | --- |
-| Owner/Admin | All operations, technician assignments, parts catalogue and stock adjustments |
+| Owner/Admin | All operations, technician assignments, parts catalogue, stock adjustments and staff account administration |
 | Front Desk | Customer/equipment intake, job cards, estimates/approval and manual payments |
 | Technician | Assigned jobs only; notes, valid workflow moves, and parts usage while work is in progress |
 
-Permissions are checked on the server. Hiding a link is not treated as authorization.
+Permissions are checked on the server. Hiding a link is not treated as authorization. Disabled accounts are rejected on subsequent requests, and the final active Owner/Admin account cannot be deactivated.
 
 ## Workflow rules
 
 Valid moves are enforced server-side. Closed jobs cannot be reopened through the interface. An estimate must be approved before a job can move from **Awaiting Approval** to **In Progress**. Parts usage is allowed only while the job is **In Progress** and is saved with the inventory reduction in one database transaction.
 
-## Verification status
+## Automated tests
 
-The project targets .NET SDK 10.0.403 and the installed .NET 10 runtime was detected. Restore was attempted on this machine but NuGet access to `https://api.nuget.org/v3/index.json` was denied by the current environment (`NU1301: Access to the path is denied`), so a successful restore/build cannot honestly be claimed yet. No MySQL server connection was attempted or verified.
+A separate `FixFlow.Tests` project covers the job-total calculation, password hashing/verification and allowed job-status transitions. From the `FixFlow` project folder, run:
 
-Once the local machine can reach NuGet and the MySQL credentials have been placed in User Secrets, run `dotnet restore` and `dotnet build` from this folder. The application does not contain payment-card processing, SMS, email, AI or external API integrations.
+```powershell
+dotnet test ..\FixFlow.Tests\FixFlow.Tests.csproj
+```
+
+The tests do not replace live-MySQL integration checks. Payment row locks, receipt-number locks and job-reference locks must be exercised against the configured MySQL database because EF Core's in-memory provider cannot reproduce MySQL locking behavior.
+
+## Production notes
+
+- Use unique staff passwords of at least 12 characters.
+- Change or remove the development seed accounts before production use.
+- Store the production connection string in a secret store, not in source control.
+- Back up the MySQL database before applying schema changes.
+- The current `Database/01_create_schema.sql` includes the stock-movement staff and repair-job foreign keys. Existing databases should be inspected before running any manual `ALTER TABLE` statements. Job creation now writes its job card and initial status-history row in one EF Core save transaction. Payment balances are recalculated from fresh database aggregates after the repair-job row is locked.

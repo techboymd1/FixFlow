@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using FixFlow.Data;
 using FixFlow.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -31,8 +33,14 @@ public class LoginModel(FixFlowDbContext database, PasswordService passwordServi
             return Page();
         }
 
-        var user = await database.Users.SingleOrDefaultAsync(item => item.UserName == Input.UserName.Trim());
-        if (user is null || !user.IsActive || !passwordService.VerifyPassword(Input.Password, user.PasswordHash))
+        var user = await database.Users.SingleOrDefaultAsync(item =>
+            item.UserName == Input.UserName.Trim()
+        );
+        if (
+            user is null
+            || !user.IsActive
+            || !passwordService.VerifyPassword(Input.Password, user.PasswordHash)
+        )
         {
             ModelState.AddModelError(string.Empty, "The username or password is incorrect.");
             return Page();
@@ -42,10 +50,20 @@ public class LoginModel(FixFlowDbContext database, PasswordService passwordServi
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
-            new(ClaimTypes.Role, user.Role)
+            new(ClaimTypes.Role, user.Role),
+            new(
+                "FixFlow.PasswordStamp",
+                Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(user.PasswordHash)))
+            ),
         };
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
+        var identity = new ClaimsIdentity(
+            claims,
+            CookieAuthenticationDefaults.AuthenticationScheme
+        );
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(identity)
+        );
 
         return LocalRedirect(Url.IsLocalUrl(returnUrl) ? returnUrl! : "/");
     }

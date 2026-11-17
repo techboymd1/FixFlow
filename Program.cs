@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using FixFlow.Data;
 using FixFlow.Models;
 using FixFlow.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,10 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("FixFlowDb")
     ?? throw new InvalidOperationException("The ConnectionStrings:FixFlowDb setting is required.");
 
-builder.Services.AddDbContext<FixFlowDbContext>(options =>
-    options.UseMySQL(connectionString));
+builder.Services.AddDbContext<FixFlowDbContext>(options => options.UseMySQL(connectionString));
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+builder
+    .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
@@ -22,22 +24,57 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.Name = "FixFlow.Auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Events.OnValidatePrincipal = async context =>
+        {
+            var principal = context.Principal;
+            var userIdValue = principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = principal?.FindFirstValue(ClaimTypes.Role);
+
+            var isValidIdentity =
+                int.TryParse(userIdValue, out var userId) && !string.IsNullOrWhiteSpace(role);
+
+            if (isValidIdentity)
+            {
+                var database =
+                    context.HttpContext.RequestServices.GetRequiredService<FixFlowDbContext>();
+
+                isValidIdentity = await database
+                    .Users.AsNoTracking()
+                    .AnyAsync(
+                        user => user.Id == userId && user.IsActive && user.Role == role,
+                        context.HttpContext.RequestAborted
+                    );
+            }
+
+            if (!isValidIdentity)
+            {
+                context.RejectPrincipal();
+                await context.HttpContext.SignOutAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme
+                );
+            }
+        };
     });
 
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole(UserRoles.OwnerAdmin));
-    options.AddPolicy("FrontDeskOrAdmin", policy => policy.RequireRole(UserRoles.OwnerAdmin, UserRoles.FrontDesk));
-    options.AddPolicy("AllStaff", policy => policy.RequireRole(UserRoles.OwnerAdmin, UserRoles.FrontDesk, UserRoles.Technician));
+    options.AddPolicy("FrontDeskOrAdmin", policy =>
+        policy.RequireRole(UserRoles.OwnerAdmin, UserRoles.FrontDesk)
+    );
+    options.AddPolicy("AllStaff", policy =>
+        policy.RequireRole(UserRoles.OwnerAdmin, UserRoles.FrontDesk, UserRoles.Technician)
+    );
 });
 
-builder.Services.AddRazorPages(options =>
-{
-    options.Conventions.AuthorizeFolder("/");
-    options.Conventions.AllowAnonymousToPage("/Account/Login");
-    options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
-})
-.AddMvcOptions(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
+builder
+    .Services.AddRazorPages(options =>
+    {
+        options.Conventions.AuthorizeFolder("/");
+        options.Conventions.AllowAnonymousToPage("/Account/Login");
+        options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
+    })
+    .AddMvcOptions(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<JobReferenceService>();

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace FixFlow.Models;
 
@@ -7,6 +8,8 @@ public class Equipment
     public int Id { get; set; }
 
     public int CustomerId { get; set; }
+
+    [ValidateNever]
     public Customer Customer { get; set; } = null!;
 
     [Required, StringLength(50)]

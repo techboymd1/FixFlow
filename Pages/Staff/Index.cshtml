@@ -1,0 +1,113 @@
+@page
+@model FixFlow.Pages.Staff.IndexModel
+@{
+    ViewData["Title"] = "Staff accounts";
+}
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Administration</p>
+        <h1>Staff accounts</h1>
+        <p class="muted">Create accounts, manage access and reset staff passwords.</p>
+    </div>
+</div>
+
+<div class="content-grid">
+    <section class="panel">
+        <h2>Create staff account</h2>
+        <p class="muted">New accounts are active immediately. Use a unique username and a password of at least 12 characters.</p>
+
+        <form method="post" asp-page-handler="Create" class="stack-form inset-form">
+            <div asp-validation-summary="All" class="validation-summary"></div>
+
+            <div>
+                <label asp-for="CreateInput.FullName">Full name</label>
+                <input asp-for="CreateInput.FullName" autocomplete="name" />
+                <span asp-validation-for="CreateInput.FullName" class="field-error"></span>
+            </div>
+
+            <div>
+                <label asp-for="CreateInput.UserName">Username</label>
+                <input asp-for="CreateInput.UserName" autocomplete="username" />
+                <span asp-validation-for="CreateInput.UserName" class="field-error"></span>
+            </div>
+
+            <div>
+                <label asp-for="CreateInput.Role">Role</label>
+                <select asp-for="CreateInput.Role">
+                    @foreach (var role in Model.Roles)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+                <span asp-validation-for="CreateInput.Role" class="field-error"></span>
+            </div>
+
+            <div>
+                <label asp-for="CreateInput.Password">Temporary password</label>
+                <input asp-for="CreateInput.Password" autocomplete="new-password" />
+                <span asp-validation-for="CreateInput.Password" class="field-error"></span>
+            </div>
+
+            <div>
+                <label asp-for="CreateInput.ConfirmPassword">Confirm password</label>
+                <input asp-for="CreateInput.ConfirmPassword" autocomplete="new-password" />
+                <span asp-validation-for="CreateInput.ConfirmPassword" class="field-error"></span>
+            </div>
+
+            <button class="button" type="submit">Create account</button>
+        </form>
+    </section>
+
+    <section class="panel span-two">
+        <div class="panel-heading">
+            <div>
+                <h2>Existing staff</h2>
+                <p>Deactivated staff cannot sign in. The last active Owner/Admin account is protected.</p>
+            </div>
+        </div>
+
+        @if (Model.StaffMembers.Count == 0)
+        {
+            <p class="empty-state">No staff accounts found.</p>
+        }
+        else
+        {
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Staff member</th>
+                            <th>Username</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var staff in Model.StaffMembers)
+                        {
+                            <tr>
+                                <td><strong>@staff.FullName</strong></td>
+                                <td>@staff.UserName</td>
+                                <td>@staff.Role</td>
+                                <td>@(staff.IsActive ? "Active" : "Inactive")</td>
+                                <td>
+                                    <div class="staff-actions">
+                                        <a asp-page="ResetPassword" asp-route-id="@staff.Id">Reset password</a>
+                                        <form method="post" asp-page-handler="ToggleActive">
+                                            <input type="hidden" name="id" value="@staff.Id" />
+                                            <button class="button button-quiet" type="submit">
+                                                @(staff.IsActive ? "Deactivate" : "Reactivate")
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
